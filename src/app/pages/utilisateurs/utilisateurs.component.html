@@ -1,0 +1,166 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Gestion des utilisateurs">
+      <button class="btn btn-primary" (click)="openForm()">
+        + Nouvel utilisateur
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <!-- Stats rapides -->
+      <div class="metrics-grid">
+  <div class="metric-card">
+    <div class="metric-label">👥 Total utilisateurs</div>
+    <div class="metric-value">{{ users.length }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">✅ Actifs</div>
+    <div class="metric-value">{{ getNbActifs() }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">🛡️ Admins</div>
+    <div class="metric-value">{{ getNbRole('admin') }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">👔 Gérants</div>
+    <div class="metric-value">{{ getNbRole('gerant') }}</div>
+  </div>
+</div>
+
+      <!-- Tableau utilisateurs -->
+      <div class="card" style="padding:0;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; font-weight:600;">
+          👤 Liste des utilisateurs
+        </div>
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Dernière connexion</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of users">
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:36px; height:36px; border-radius:50%; background:#E6F1FB; color:#0C447C; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">
+                      {{ getInitiales(u.name) }}
+                    </div>
+                    <span style="font-weight:500;">{{ u.name }}</span>
+                  </div>
+                </td>
+                <td style="color:#6b7280;">{{ u.email }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getRoleBadge(u.role)">
+                    {{ u.role }}
+                  </span>
+                </td>
+                <td style="font-size:12px; color:#6b7280;">
+                  {{ u.last_login_at ? (u.last_login_at | date:'dd/MM/yyyy HH:mm') : 'Jamais' }}
+                </td>
+                <td>
+                  <span class="badge" [class.badge-green]="u.is_active" [class.badge-red]="!u.is_active">
+                    {{ u.is_active ? 'Actif' : 'Inactif' }}
+                  </span>
+                </td>
+                <td>
+                  <div style="display:flex; gap:6px;">
+                    <button class="btn btn-outline"
+                      style="padding:4px 8px; font-size:12px;"
+                      (click)="openForm(u)">
+                      ✏️
+                    </button>
+                    <button class="btn btn-outline"
+                      style="padding:4px 8px; font-size:12px;"
+                      [style.background]="u.is_active ? '#fef2f2' : '#f0fdf4'"
+                      [style.color]="u.is_active ? '#dc2626' : '#16a34a'"
+                      (click)="toggleActif(u)"
+                      [title]="u.is_active ? 'Désactiver' : 'Activer'">
+                      {{ u.is_active ? '🔒' : '🔓' }}
+                    </button>
+                    <button class="btn btn-danger"
+                      style="padding:4px 8px; font-size:12px;"
+                      (click)="delete(u.id)">
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="users.length === 0">
+                <td colspan="6" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucun utilisateur trouvé
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal formulaire -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:480px;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            {{ editingId ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}
+          </h3>
+
+          <div class="field">
+            <label>Nom complet *</label>
+            <input type="text" [(ngModel)]="form.name" placeholder="Prénom Nom" />
+          </div>
+
+          <div class="field">
+            <label>Email *</label>
+            <input type="email" [(ngModel)]="form.email" placeholder="email@cashdeal.com" />
+          </div>
+
+          <div class="field">
+            <label>{{ editingId ? 'Nouveau mot de passe (laisser vide = inchangé)' : 'Mot de passe *' }}</label>
+            <input type="password" [(ngModel)]="form.password"
+              [placeholder]="editingId ? 'Laisser vide pour ne pas changer' : 'Minimum 8 caractères'" />
+          </div>
+
+          <div class="field">
+            <label>Rôle *</label>
+            <select [(ngModel)]="form.role">
+              <option value="admin">Admin — Accès total</option>
+              <option value="gerant">Gérant — Gestion complète</option>
+              <option value="vendeur">Vendeur — Ventes uniquement</option>
+            </select>
+          </div>
+
+          <div *ngIf="editingId" style="display:flex; align-items:center; gap:8px; margin-bottom:1rem;">
+            <input type="checkbox" [(ngModel)]="form.is_active" id="actif" />
+            <label for="actif" style="font-size:13px; cursor:pointer;">Compte actif</label>
+          </div>
+
+          <div class="alert alert-error" *ngIf="errorMsg" style="margin-bottom:1rem;">
+            ⚠️ {{ errorMsg }}
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="closeForm()">Annuler</button>
+            <button class="btn btn-primary" (click)="save()">
+              {{ editingId ? 'Modifier' : 'Créer' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

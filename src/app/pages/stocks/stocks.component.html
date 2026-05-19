@@ -1,0 +1,192 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Gestion des stocks">
+      <button class="btn btn-outline" (click)="exportExcel()"
+        style="display:flex; align-items:center; gap:6px;">
+        📊 Export Excel
+      </button>
+      <button class="btn btn-primary" (click)="openForm()"
+        *ngIf="auth.hasRole(['admin','gerant'])">
+        + Nouveau produit
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">📦 Total produits</div>
+          <div class="metric-value">{{ stats.total || 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">✅ En stock</div>
+          <div class="metric-value">{{ stats.en_stock || 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">⚠️ Stock faible</div>
+          <div class="metric-value">{{ stats.stock_faible || 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">❌ Rupture</div>
+          <div class="metric-value">{{ stats.rupture || 0 }}</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 1rem;">
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <div class="search-bar" style="flex:1; min-width:200px;">
+            🔍
+            <input type="text" placeholder="Rechercher produit ou référence..."
+              [(ngModel)]="searchTerm" (input)="loadProduits()" />
+          </div>
+          <select style="margin:0; padding:8px 12px; width:auto; border:1px solid #d1d5db; border-radius:8px; font-size:13px;"
+            [(ngModel)]="statutFilter" (change)="loadProduits()">
+            <option value="">Tous les statuts</option>
+            <option value="ok">En stock</option>
+            <option value="alerte">Stock faible</option>
+            <option value="rupture">Rupture</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Produit</th>
+                <th>Catégorie</th>
+                <th>Prix achat</th>
+                <th>Prix vente</th>
+                <th>Quantité</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of produits">
+                <td style="color:#6b7280; font-size:12px;">{{ p.reference }}</td>
+                <td style="font-weight:500;">{{ p.nom }}</td>
+                <td>{{ p.categorie?.nom }}</td>
+                <td>{{ p.prix_achat | number:'1.0-0' }} F</td>
+                <td>{{ p.prix_vente | number:'1.0-0' }} F</td>
+                <td>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:50px; height:5px; background:#e5e7eb; border-radius:3px;">
+                      <div [style.width.%]="(p.quantite / 30) * 100"
+                           [style.background]="p.quantite === 0 ? '#dc2626' : p.quantite <= p.seuil_alerte ? '#f59e0b' : '#16a34a'"
+                           style="height:100%; border-radius:3px;"></div>
+                    </div>
+                    {{ p.quantite }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getBadge(p)">
+                    {{ getStatutLabel(p) }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-outline"
+                    style="padding:4px 8px; font-size:12px; margin-right:4px;"
+                    (click)="openForm(p)"
+                    *ngIf="auth.hasRole(['admin','gerant'])">
+                    ✏️
+                  </button>
+                  <button class="btn btn-danger"
+                    style="padding:4px 8px; font-size:12px;"
+                    (click)="delete(p.id)"
+                    *ngIf="auth.hasRole(['admin'])">
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="produits.length === 0">
+                <td colspan="8" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucun produit trouvé
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:550px; max-height:90vh; overflow-y:auto;">
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            {{ editingId ? 'Modifier le produit' : 'Nouveau produit' }}
+          </h3>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Référence</label>
+              <input type="text" [(ngModel)]="form.reference" placeholder="GOR-0041" />
+            </div>
+            <div class="field">
+              <label>Catégorie</label>
+              <select [(ngModel)]="form.categorie_id">
+                <option value="">Choisir...</option>
+                <option value="1">Gard'or</option>
+                <option value="2">Cash Auto</option>
+                <option value="3">Accessoires</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Nom du produit</label>
+            <input type="text" [(ngModel)]="form.nom" placeholder="Bague OR 18K — 5g" />
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label>Prix achat (F)</label>
+              <input type="number" [(ngModel)]="form.prix_achat" />
+            </div>
+            <div class="field">
+              <label>Prix vente (F)</label>
+              <input type="number" [(ngModel)]="form.prix_vente" />
+            </div>
+            <div class="field">
+              <label>Prix revient (F)</label>
+              <input type="number" [(ngModel)]="form.prix_revient" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Quantité</label>
+              <input type="number" [(ngModel)]="form.quantite" />
+            </div>
+            <div class="field">
+              <label>Seuil alerte</label>
+              <input type="number" [(ngModel)]="form.seuil_alerte" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea [(ngModel)]="form.notes" rows="2"
+              placeholder="Notes optionnelles..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:1rem;">
+            <button class="btn btn-outline" (click)="closeForm()">Annuler</button>
+            <button class="btn btn-primary" (click)="save()">
+              {{ editingId ? 'Modifier' : 'Ajouter' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

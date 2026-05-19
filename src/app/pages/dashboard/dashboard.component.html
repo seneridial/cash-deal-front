@@ -1,0 +1,81 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Dashboard"></app-topbar>
+
+    <div class="page-content">
+      <div *ngIf="loading" class="loading">Chargement...</div>
+
+      <div *ngIf="!loading">
+        <!-- Métriques -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">📦 Total produits</div>
+            <div class="metric-value">{{ stats.nb_produits || 0 }}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">💰 Ventes du mois</div>
+            <div class="metric-value">{{ format(stats.ventes_mois) }}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">🚚 Achats du mois</div>
+            <div class="metric-value">{{ format(stats.achats_mois) }}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">📈 Bénéfice net</div>
+            <div class="metric-value">{{ format(stats.benefice_mois) }}</div>
+            <div class="metric-sub up">Ce mois</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:1rem;">
+          <!-- Dernières ventes -->
+          <div class="card">
+            <div class="card-title">🧾 Dernières ventes</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Numéro</th>
+                    <th>Client</th>
+                    <th>Total</th>
+                    <th>Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let v of stats.dernieres_ventes">
+                    <td>{{ v.numero }}</td>
+                    <td>{{ v.client?.nom || 'Anonyme' }}</td>
+                    <td>{{ format(v.montant_total) }}</td>
+                    <td>
+                      <span class="badge"
+                        [class.badge-green]="v.statut === 'paye'"
+                        [class.badge-amber]="v.statut === 'en_attente'"
+                        [class.badge-red]="v.statut === 'annule'">
+                        {{ v.statut }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Alertes stock -->
+          <div class="card">
+            <div class="card-title">⚠️ Alertes stock</div>
+            <div *ngFor="let a of stats.alertes_stock" class="alert"
+              [class.alert-error]="a.quantite === 0"
+              style="margin-bottom:8px; font-size:13px;">
+              <strong>{{ a.nom }}</strong> —
+              {{ a.quantite === 0 ? 'Rupture de stock' : a.quantite + ' restants' }}
+            </div>
+            <div *ngIf="!stats.alertes_stock?.length" style="color:#6b7280; font-size:13px;">
+              ✅ Aucune alerte
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

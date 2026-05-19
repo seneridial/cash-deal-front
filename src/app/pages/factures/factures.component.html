@@ -1,0 +1,58 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Factures & Devis"></app-topbar>
+
+    <div class="page-content">
+
+      <div class="card" style="padding:0;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; font-weight:600;">
+          🧾 Liste des factures
+        </div>
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Type</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of factures">
+                <td style="font-weight:500; color:#185FA5;">{{ f.numero }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getTypeBadge(f.type)">{{ f.type }}</span>
+                </td>
+                <td>{{ f.client?.nom || 'Anonyme' }}</td>
+                <td>{{ f.date_emission | date:'dd/MM/yyyy' }}</td>
+                <td>{{ format(f.montant_total) }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getBadge(f.statut)">{{ f.statut }}</span>
+                </td>
+                <td>
+                  <button class="btn btn-outline"
+                    style="padding:5px 10px; font-size:12px; display:flex; align-items:center; gap:4px;"
+                    (click)="downloadPdf(f)">
+                    📥 PDF
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="factures.length === 0">
+                <td colspan="7" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucune facture disponible
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

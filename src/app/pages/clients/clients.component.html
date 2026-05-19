@@ -1,0 +1,168 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Clients & Fournisseurs">
+      <button class="btn btn-primary" (click)="openForm()">
+        + Nouveau client
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <!-- Filtres -->
+      <div class="card" style="padding:1rem;">
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <div class="search-bar" style="flex:1; min-width:200px;">
+            🔍
+            <input type="text" placeholder="Rechercher par nom, téléphone..."
+              [(ngModel)]="searchTerm" (input)="loadClients()" />
+          </div>
+          <select style="padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;"
+            [(ngModel)]="typeFilter" (change)="loadClients()">
+            <option value="">Tous les types</option>
+            <option value="client">Clients</option>
+            <option value="fournisseur">Fournisseurs</option>
+            <option value="les_deux">Les deux</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Grille clients -->
+      <div *ngIf="loading" class="loading">Chargement...</div>
+
+      <div *ngIf="!loading" style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem;">
+        <div *ngFor="let c of clients" class="card"
+          style="display:flex; flex-direction:column; gap:10px;">
+
+          <!-- En-tête -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0;"
+              [style.background]="getAvatarColor(c.type)"
+              [style.color]="getAvatarTextColor(c.type)">
+              {{ getInitiales(c.nom) }}
+            </div>
+            <div>
+              <div style="font-weight:600; font-size:14px;">{{ c.nom }}</div>
+              <div style="font-size:11px; color:#6b7280;">
+                {{ c.type === 'client' ? 'Client' : c.type === 'fournisseur' ? 'Fournisseur' : 'Client & Fournisseur' }}
+                <span *ngIf="c.is_vip" style="color:#d97706; margin-left:4px;">⭐ VIP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Infos -->
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div *ngIf="c.telephone" style="font-size:12px; color:#374151;">
+              📞 {{ c.telephone }}
+            </div>
+            <div *ngIf="c.email" style="font-size:12px; color:#374151;">
+              ✉️ {{ c.email }}
+            </div>
+            <div *ngIf="c.ville" style="font-size:12px; color:#374151;">
+              📍 {{ c.ville }}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex; gap:6px; margin-top:auto;">
+            <button class="btn btn-outline" style="flex:1; font-size:12px; justify-content:center;"
+              (click)="openForm(c)">
+              ✏️ Modifier
+            </button>
+            <button class="btn btn-danger" style="padding:6px 10px; font-size:12px;"
+              (click)="delete(c.id)"
+              *ngIf="auth.hasRole(['admin'])">
+              🗑️
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="clients.length === 0"
+          style="grid-column:1/-1; text-align:center; color:#6b7280; padding:3rem;">
+          Aucun client trouvé
+        </div>
+      </div>
+
+      <!-- Modal formulaire -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:550px; max-height:90vh; overflow-y:auto;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            {{ editingId ? 'Modifier le client' : 'Nouveau client' }}
+          </h3>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Nom complet *</label>
+              <input type="text" [(ngModel)]="form.nom" placeholder="Mamadou Diallo" />
+            </div>
+            <div class="field">
+              <label>Type *</label>
+              <select [(ngModel)]="form.type">
+                <option value="client">Client</option>
+                <option value="fournisseur">Fournisseur</option>
+                <option value="les_deux">Les deux</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Téléphone</label>
+              <input type="text" [(ngModel)]="form.telephone" placeholder="+221 77 000 00 00" />
+            </div>
+            <div class="field">
+              <label>Téléphone 2</label>
+              <input type="text" [(ngModel)]="form.telephone2" placeholder="+221 78 000 00 00" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="form.email" placeholder="email@exemple.com" />
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Ville</label>
+              <input type="text" [(ngModel)]="form.ville" placeholder="Dakar" />
+            </div>
+            <div class="field">
+              <label>Entreprise</label>
+              <input type="text" [(ngModel)]="form.entreprise" placeholder="Nom entreprise" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Adresse</label>
+            <input type="text" [(ngModel)]="form.adresse" placeholder="Adresse complète" />
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea [(ngModel)]="form.notes" rows="2"></textarea>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:1rem;">
+            <input type="checkbox" [(ngModel)]="form.is_vip" id="vip" />
+            <label for="vip" style="font-size:13px; cursor:pointer;">⭐ Client VIP</label>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="closeForm()">Annuler</button>
+            <button class="btn btn-primary" (click)="save()">
+              {{ editingId ? 'Modifier' : 'Ajouter' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

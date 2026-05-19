@@ -1,4 +1,7 @@
-import { Routes } from '@angular/router';
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { AuthGuard } from './guards/auth.guard';
+
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { StocksComponent } from './pages/stocks/stocks.component';
@@ -7,10 +10,8 @@ import { AchatsComponent } from './pages/achats/achats.component';
 import { ClientsComponent } from './pages/clients/clients.component';
 import { FacturesComponent } from './pages/factures/factures.component';
 import { StatistiquesComponent } from './pages/statistiques/statistiques.component';
-import { UtilisateursComponent } from './pages/utilisateurs/utilisateurs.component';
-import { AuthGuard } from './guards/auth.guard';
 
-export const routes: Routes = [
+const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
@@ -20,6 +21,11 @@ export const routes: Routes = [
   { path: 'clients', component: ClientsComponent, canActivate: [AuthGuard] },
   { path: 'factures', component: FacturesComponent, canActivate: [AuthGuard] },
   { path: 'statistiques', component: StatistiquesComponent, canActivate: [AuthGuard] },
-  { path: 'utilisateurs', component: UtilisateursComponent, canActivate: [AuthGuard], data: { roles: ['admin'] } },
-  { path: '**', redirectTo: '/login' },
+  { path: '**', redirectTo: '/login' }
 ];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}

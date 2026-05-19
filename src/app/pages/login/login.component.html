@@ -1,0 +1,72 @@
+<div class="login-page">
+  <div class="login-left">
+    <div class="brand-logo"><span>CASH<br>DEAL</span></div>
+    <h1 class="brand-title">Cash Deal</h1>
+    <p class="brand-sub">Logiciel de gestion de stock</p>
+    <ul class="features">
+      <li>📦 Stocks en temps réel</li>
+      <li>🧾 Ventes, achats & facturation</li>
+      <li>📊 Statistiques & bilans</li>
+      <li>📥 Export PDF & Excel</li>
+    </ul>
+  </div>
+
+  <div class="login-right">
+    <div class="form-card">
+      <div class="form-header">
+        <h2>Connexion</h2>
+        <p>Accédez à votre espace de gestion</p>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" novalidate>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            [(ngModel)]="email"
+            required
+            placeholder="votre@email.com"
+          />
+        </div>
+
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <div class="pw-wrap">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              name="password"
+              [(ngModel)]="password"
+              required
+              placeholder="••••••••"
+            />
+            <button type="button" class="pw-toggle"
+              (click)="showPassword = !showPassword">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-error" *ngIf="errorMsg">
+          ⚠️ {{ errorMsg }}
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          style="width:100%; padding:11px; font-size:15px; justify-content:center;"
+          [disabled]="loading">
+          {{ loading ? 'Connexion...' : 'Se connecter' }}
+        </button>
+
+      </form>
+
+      <p style="text-align:center; font-size:12px; color:#6b7280; margin-top:1rem;">
+        🔒 Connexion sécurisée — Cash Deal v1.0
+      </p>
+    </div>
+  </div>
+</div>

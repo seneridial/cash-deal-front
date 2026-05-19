@@ -1,0 +1,150 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Achats">
+      <button class="btn btn-primary" (click)="showForm = true; resetForm()">
+        + Nouvel achat
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <div class="card" style="padding:0;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; font-weight:600;">
+          🚚 Historique des achats
+        </div>
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Fournisseur</th>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Paiement</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of achats">
+                <td style="font-weight:500; color:#185FA5;">{{ a.numero }}</td>
+                <td>{{ a.fournisseur?.nom || 'Inconnu' }}</td>
+                <td>{{ a.date_achat | date:'dd/MM/yyyy' }}</td>
+                <td>{{ format(a.montant_total) }}</td>
+                <td>{{ a.mode_paiement }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getBadge(a.statut)">{{ a.statut }}</span>
+                </td>
+              </tr>
+              <tr *ngIf="achats.length === 0">
+                <td colspan="6" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucun achat enregistré
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal formulaire -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:650px; max-height:90vh; overflow-y:auto;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">Nouvel achat</h3>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Fournisseur</label>
+              <select [(ngModel)]="form.fournisseur_id">
+                <option [ngValue]="null">Sans fournisseur</option>
+                <option *ngFor="let f of fournisseurs" [value]="f.id">{{ f.nom }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Date achat</label>
+              <input type="date" [(ngModel)]="form.date_achat" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Mode de paiement</label>
+            <select [(ngModel)]="form.mode_paiement">
+              <option value="especes">Espèces</option>
+              <option value="virement">Virement</option>
+              <option value="cheque">Chèque</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="credit">Crédit</option>
+            </select>
+          </div>
+
+          <!-- Lignes produits -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-weight:500; margin-bottom:8px; font-size:13px;">Produits achetés</div>
+            <div *ngFor="let ligne of form.details; let i = index"
+              style="display:grid; grid-template-columns:2fr 1fr 1fr auto;
+                     gap:8px; margin-bottom:8px; align-items:end;">
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Produit</label>
+                <select [(ngModel)]="ligne.produit_id" (ngModelChange)="recalculer()">
+                  <option [ngValue]="null">Choisir...</option>
+                  <option *ngFor="let p of produits" [value]="p.id">{{ p.nom }}</option>
+                </select>
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Qté</label>
+                <input type="number"
+                  [(ngModel)]="ligne.quantite"
+                  (ngModelChange)="ligne.quantite = $event; recalculer()"
+                  min="1" />
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Prix unitaire</label>
+                <input type="number"
+                  [(ngModel)]="ligne.prix_unitaire"
+                  (ngModelChange)="ligne.prix_unitaire = $event; recalculer()"
+                  min="0" />
+              </div>
+
+              <button class="btn btn-danger" style="padding:8px; font-size:12px;"
+                (click)="removeLigne(i)" *ngIf="form.details.length > 1">🗑️</button>
+            </div>
+            <button class="btn btn-outline" style="font-size:12px;" (click)="addLigne()">
+              + Ajouter un produit
+            </button>
+          </div>
+
+          <!-- Total -->
+          <div style="background:#f9fafb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+            <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:600;">
+              <span>Total achat</span>
+              <span style="color:#185FA5;">{{ format(total) }}</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea [(ngModel)]="form.notes" rows="2"></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="showForm = false; resetForm()">Annuler</button>
+            <button class="btn btn-primary" (click)="soumettre()" [disabled]="loading">
+              {{ loading ? 'Enregistrement...' : 'Valider l\'achat' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

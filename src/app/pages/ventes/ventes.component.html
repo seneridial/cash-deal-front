@@ -1,0 +1,170 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Ventes">
+      <button class="btn btn-primary" (click)="showForm = true">
+        + Nouvelle vente
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <!-- Liste des ventes -->
+      <div class="card" style="padding:0;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; font-weight:600;">
+          🧾 Historique des ventes
+        </div>
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th>Montant total</th>
+                <th>Paiement</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of ventes">
+                <td style="font-weight:500; color:#185FA5;">{{ v.numero }}</td>
+                <td>{{ v.client?.nom || 'Anonyme' }}</td>
+                <td>{{ v.date_vente | date:'dd/MM/yyyy' }}</td>
+                <td>{{ format(v.montant_total) }}</td>
+                <td>{{ v.mode_paiement }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getBadge(v.statut)">
+                    {{ v.statut }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="ventes.length === 0">
+                <td colspan="6" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucune vente enregistrée
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Formulaire modal -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:650px; max-height:90vh; overflow-y:auto;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            Nouvelle vente
+          </h3>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Client</label>
+              <select [(ngModel)]="form.client_id">
+                <option [ngValue]="null">Client anonyme</option>
+                <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Date vente</label>
+              <input type="date" [(ngModel)]="form.date_vente" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Mode de paiement</label>
+            <select [(ngModel)]="form.mode_paiement">
+              <option value="especes">Espèces</option>
+              <option value="virement">Virement</option>
+              <option value="cheque">Chèque</option>
+              <option value="mobile_money">Mobile Money</option>
+              <option value="credit">Crédit</option>
+            </select>
+          </div>
+
+          <!-- Lignes de produits -->
+          <div style="margin-bottom:1rem;">
+            <div style="font-weight:500; margin-bottom:8px; font-size:13px;">
+              Produits
+            </div>
+
+            <div *ngFor="let ligne of form.details; let i = index"
+              style="display:grid; grid-template-columns:2fr 1fr 1fr auto;
+                     gap:8px; margin-bottom:8px; align-items:end;">
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Produit</label>
+                <select [(ngModel)]="ligne.produit_id"
+                  (change)="onProduitChange(i)">
+                  <option [ngValue]="null">Choisir...</option>
+                  <option *ngFor="let p of produits" [value]="p.id">
+                    {{ p.nom }} ({{ p.quantite }} dispo)
+                  </option>
+                </select>
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Qté</label>
+                <input type="number" [(ngModel)]="ligne.quantite" min="1" />
+              </div>
+
+              <div class="field" style="margin:0;">
+                <label *ngIf="i === 0">Prix unitaire</label>
+                <input type="number" [(ngModel)]="ligne.prix_unitaire" min="0" />
+              </div>
+
+              <button class="btn btn-danger"
+                style="padding:8px; font-size:12px;"
+                (click)="removeLigne(i)"
+                *ngIf="form.details.length > 1">
+                🗑️
+              </button>
+            </div>
+
+            <button class="btn btn-outline" style="font-size:12px;" (click)="addLigne()">
+              + Ajouter un produit
+            </button>
+          </div>
+
+          <!-- Totaux -->
+          <div style="background:#f9fafb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+              <span>Sous-total</span><span>{{ format(totalHT) }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px;">
+              <span>Remise (F)</span>
+              <input type="number" [(ngModel)]="form.remise" min="0"
+                style="width:120px; padding:4px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;" />
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:600; border-top:1px solid #e5e7eb; padding-top:8px;">
+              <span>Total</span><span style="color:#185FA5;">{{ format(totalFinal) }}</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea [(ngModel)]="form.notes" rows="2" placeholder="Notes optionnelles..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="showForm = false; resetForm()">
+              Annuler
+            </button>
+            <button class="btn btn-primary" (click)="soumettre()" [disabled]="loading">
+              {{ loading ? 'Enregistrement...' : 'Valider la vente' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
