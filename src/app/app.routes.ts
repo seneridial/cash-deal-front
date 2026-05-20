@@ -9,6 +9,7 @@ import { FacturesComponent } from './pages/factures/factures.component';
 import { StatistiquesComponent } from './pages/statistiques/statistiques.component';
 import { UtilisateursComponent } from './pages/utilisateurs/utilisateurs.component';
 import { AuthGuard } from './guards/auth.guard';
+import { DepotsComponent } from './pages/depots/depots.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -21,5 +22,6 @@ export const routes: Routes = [
   { path: 'factures', component: FacturesComponent, canActivate: [AuthGuard] },
   { path: 'statistiques', component: StatistiquesComponent, canActivate: [AuthGuard] },
   { path: 'utilisateurs', component: UtilisateursComponent, canActivate: [AuthGuard], data: { roles: ['admin'] } },
+  { path: 'depots', component: DepotsComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '/login' },
 ];

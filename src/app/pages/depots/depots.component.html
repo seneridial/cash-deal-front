@@ -1,0 +1,237 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Dépôts & Mouvements">
+      <button class="btn btn-outline" (click)="exportPdf()"
+        style="display:flex; align-items:center; gap:6px;">
+        📄 Export PDF
+      </button>
+      <button class="btn btn-outline" (click)="exportExcel()"
+        style="display:flex; align-items:center; gap:6px;">
+        📊 Export Excel
+      </button>
+      <button class="btn btn-primary" (click)="openForm()">
+        + Nouveau mouvement
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <!-- Stats -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">📥 Total entrées</div>
+          <div class="metric-value">{{ stats.total_entrees || 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">📤 Total sorties</div>
+          <div class="metric-value">{{ stats.total_sorties || 0 }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💰 Valeur entrées</div>
+          <div class="metric-value">{{ format(stats.total_valeur_entrees) }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">💸 Valeur sorties</div>
+          <div class="metric-value">{{ format(stats.total_valeur_sorties) }}</div>
+        </div>
+      </div>
+
+      <!-- Onglets -->
+      <div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:1rem; background:#fff; border-radius:8px 8px 0 0;">
+        <button (click)="activeTab='mouvements'"
+          style="padding:12px 20px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:500;"
+          [style.color]="activeTab==='mouvements' ? '#185FA5' : '#6b7280'"
+          [style.border-bottom]="activeTab==='mouvements' ? '2px solid #185FA5' : 'none'">
+          📋 Mouvements
+        </button>
+        <button (click)="activeTab='etats'"
+          style="padding:12px 20px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:500;"
+          [style.color]="activeTab==='etats' ? '#185FA5' : '#6b7280'"
+          [style.border-bottom]="activeTab==='etats' ? '2px solid #185FA5' : 'none'">
+          📈 États (Vendus / Rachetés / Restants)
+        </button>
+      </div>
+
+      <!-- Tab Mouvements -->
+      <div *ngIf="activeTab === 'mouvements'">
+        <div class="card" style="padding:1rem; margin-bottom:1rem;">
+          <select style="padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;"
+            [(ngModel)]="typeFilter" (change)="loadMouvements()">
+            <option value="">Tous les mouvements</option>
+            <option value="entree">📥 Entrées seulement</option>
+            <option value="sortie">📤 Sorties seulement</option>
+          </select>
+        </div>
+
+        <div class="card" style="padding:0;">
+          <div *ngIf="loading" class="loading">Chargement...</div>
+          <div class="table-wrap" *ngIf="!loading">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Produit</th>
+                  <th>Catégorie</th>
+                  <th>Origine</th>
+                  <th>Quantité</th>
+                  <th>Prix unitaire</th>
+                  <th>Total</th>
+                  <th>Motif</th>
+                  <th>Date</th>
+                  <th>Par</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let m of mouvements">
+                  <td>
+                    <span class="badge"
+                      [class.badge-green]="m.type === 'entree'"
+                      [class.badge-red]="m.type === 'sortie'">
+                      {{ m.type === 'entree' ? '📥 Entrée' : '📤 Sortie' }}
+                    </span>
+                  </td>
+                  <td style="font-weight:500;">{{ m.produit?.nom }}</td>
+                  <td>{{ m.produit?.categorie?.nom }}</td>
+                  <td>{{ m.origine || '—' }}</td>
+                  <td>{{ m.quantite }}</td>
+                  <td>{{ format(m.prix_unitaire) }}</td>
+                  <td style="font-weight:500;">{{ format(m.total) }}</td>
+                  <td>{{ m.motif || '—' }}</td>
+                  <td>{{ m.date_mouvement | date:'dd/MM/yyyy' }}</td>
+                  <td style="font-size:12px; color:#6b7280;">{{ m.user?.name }}</td>
+                </tr>
+                <tr *ngIf="mouvements.length === 0">
+                  <td colspan="10" style="text-align:center; color:#6b7280; padding:2rem;">
+                    Aucun mouvement enregistré
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab États -->
+      <div *ngIf="activeTab === 'etats'">
+        <div class="card" style="padding:0;">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Référence</th>
+                  <th>Catégorie</th>
+                  <th>Vendus</th>
+                  <th>Rachetés</th>
+                  <th>Restants</th>
+                  <th>CA Ventes</th>
+                  <th>Coût Achats</th>
+                  <th>Bénéfice</th>
+                  <th>Perte</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let e of etats">
+                  <td style="font-weight:500;">{{ e.produit }}</td>
+                  <td style="font-size:12px; color:#6b7280;">{{ e.reference }}</td>
+                  <td>{{ e.categorie }}</td>
+                  <td style="color:#185FA5; font-weight:500;">{{ e.vendus }}</td>
+                  <td style="color:#16a34a; font-weight:500;">{{ e.rachetes }}</td>
+                  <td style="font-weight:500;">{{ e.restants }}</td>
+                  <td>{{ format(e.ca_ventes) }}</td>
+                  <td>{{ format(e.cout_achats) }}</td>
+                  <td [style.color]="e.benefice >= 0 ? '#16a34a' : '#dc2626'" style="font-weight:600;">
+                    {{ format(e.benefice) }}
+                  </td>
+                  <td style="color:#dc2626; font-weight:500;">
+                    {{ e.perte > 0 ? format(e.perte) : '—' }}
+                  </td>
+                </tr>
+                <tr *ngIf="etats.length === 0">
+                  <td colspan="10" style="text-align:center; color:#6b7280; padding:2rem;">
+                    Aucune donnée disponible
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal formulaire -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:500px; max-height:90vh; overflow-y:auto;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            Nouveau mouvement
+          </h3>
+
+          <div class="field">
+            <label>Type *</label>
+            <select [(ngModel)]="form.type">
+              <option value="entree">📥 Entrée (réception)</option>
+              <option value="sortie">📤 Sortie (expédition)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Produit *</label>
+            <select [(ngModel)]="form.produit_id">
+              <option [ngValue]="null">Choisir un produit...</option>
+              <option *ngFor="let p of produits" [value]="p.id">
+                {{ p.nom }} — Stock : {{ p.quantite }}
+              </option>
+            </select>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Quantité *</label>
+              <input type="number" [(ngModel)]="form.quantite" min="1" />
+            </div>
+            <div class="field">
+              <label>Prix unitaire (F)</label>
+              <input type="number" [(ngModel)]="form.prix_unitaire" min="0" />
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Origine</label>
+              <input type="text" [(ngModel)]="form.origine"
+                placeholder="Ex: Fournisseur X..." />
+            </div>
+            <div class="field">
+              <label>Motif</label>
+              <input type="text" [(ngModel)]="form.motif"
+                placeholder="Ex: Achat, Retour..." />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Date *</label>
+            <input type="date" [(ngModel)]="form.date_mouvement" />
+          </div>
+
+          <div class="field">
+            <label>Notes</label>
+            <textarea [(ngModel)]="form.notes" rows="2"></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="showForm = false">Annuler</button>
+            <button class="btn btn-primary" (click)="soumettre()">Enregistrer</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
