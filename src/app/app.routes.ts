@@ -10,6 +10,7 @@ import { StatistiquesComponent } from './pages/statistiques/statistiques.compone
 import { UtilisateursComponent } from './pages/utilisateurs/utilisateurs.component';
 import { AuthGuard } from './guards/auth.guard';
 import { DepotsComponent } from './pages/depots/depots.component';
+import { ContactComponent } from './pages/contact/contact.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -23,5 +24,6 @@ export const routes: Routes = [
   { path: 'statistiques', component: StatistiquesComponent, canActivate: [AuthGuard] },
   { path: 'utilisateurs', component: UtilisateursComponent, canActivate: [AuthGuard], data: { roles: ['admin'] } },
   { path: 'depots', component: DepotsComponent, canActivate: [AuthGuard] },
+  { path: 'contact', component: ContactComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '/login' },
 ];

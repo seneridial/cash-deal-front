@@ -1,0 +1,193 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Annuaire & Messagerie">
+      <button class="btn btn-primary" (click)="openForm()">
+        + Nouveau message
+      </button>
+    </app-topbar>
+
+    <div class="page-content">
+
+      <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+      <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+      <!-- Stats -->
+      <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="metric-card">
+          <div class="metric-label">📬 Total messages</div>
+          <div class="metric-value">{{ messages.length }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🔴 Non lus</div>
+          <div class="metric-value" style="color:#dc2626;">{{ getNonLus() }}</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">✅ Répondus</div>
+          <div class="metric-value" style="color:#16a34a;">{{ getRepondus() }}</div>
+        </div>
+      </div>
+
+      <!-- Liste messages -->
+      <div class="card" style="padding:0;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; font-weight:600;">
+          💬 Messages des clients
+        </div>
+        <div *ngIf="loading" class="loading">Chargement...</div>
+        <div class="table-wrap" *ngIf="!loading">
+          <table>
+            <thead>
+              <tr>
+                <th>Statut</th>
+                <th>De</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Sujet</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of messages"
+                [style.background]="m.statut === 'non_lu' ? '#fef9f0' : ''">
+                <td>
+                  <span class="badge" [ngClass]="getBadge(m.statut)">
+                    {{ getStatutLabel(m.statut) }}
+                  </span>
+                </td>
+                <td style="font-weight:500;">{{ m.nom }}</td>
+                <td style="font-size:12px; color:#6b7280;">{{ m.email || '—' }}</td>
+                <td style="font-size:12px; color:#6b7280;">{{ m.telephone || '—' }}</td>
+                <td>{{ m.sujet }}</td>
+                <td style="font-size:12px; color:#6b7280;">
+                  {{ m.created_at | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+                <td>
+                  <button class="btn btn-outline"
+                    style="padding:4px 10px; font-size:12px;"
+                    (click)="voir(m)">
+                    👁️ Voir
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="messages.length === 0">
+                <td colspan="7" style="text-align:center; color:#6b7280; padding:2rem;">
+                  Aucun message
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal nouveau message -->
+      <div *ngIf="showForm"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:520px; max-height:90vh; overflow-y:auto;">
+
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
+            Nouveau message
+          </h3>
+
+          <div class="field">
+            <label>Client (optionnel)</label>
+            <select [(ngModel)]="form.client_id" (ngModelChange)="onClientChange()">
+              <option [ngValue]="null">Sélectionner un client...</option>
+              <option *ngFor="let c of clients" [value]="c.id">{{ c.nom }}</option>
+            </select>
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label>Nom *</label>
+              <input type="text" [(ngModel)]="form.nom" placeholder="Nom complet" />
+            </div>
+            <div class="field">
+              <label>Téléphone</label>
+              <input type="text" [(ngModel)]="form.telephone" placeholder="+221 77..." />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="form.email" placeholder="email@exemple.com" />
+          </div>
+
+          <div class="field">
+            <label>Sujet *</label>
+            <input type="text" [(ngModel)]="form.sujet"
+              placeholder="Ex: Demande de devis, Réclamation..." />
+          </div>
+
+          <div class="field">
+            <label>Message *</label>
+            <textarea [(ngModel)]="form.message" rows="4"
+              placeholder="Écrivez votre message ici..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="showForm = false">Annuler</button>
+            <button class="btn btn-primary" (click)="envoyer()">
+              📨 Envoyer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal détail message -->
+      <div *ngIf="showDetail"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
+               display:flex; align-items:center; justify-content:center; z-index:1000;">
+        <div style="background:#fff; border-radius:12px; padding:2rem;
+                    width:100%; max-width:560px; max-height:90vh; overflow-y:auto;">
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h3 style="font-size:16px; font-weight:600;">{{ showDetail.sujet }}</h3>
+            <span class="badge" [ngClass]="getBadge(showDetail.statut)">
+              {{ getStatutLabel(showDetail.statut) }}
+            </span>
+          </div>
+
+          <div style="background:#f9fafb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+            <div style="font-size:12px; color:#6b7280; margin-bottom:8px;">
+              De : <strong>{{ showDetail.nom }}</strong>
+              {{ showDetail.email ? '— ' + showDetail.email : '' }}
+              {{ showDetail.telephone ? '— ' + showDetail.telephone : '' }}
+            </div>
+            <div style="font-size:12px; color:#6b7280; margin-bottom:12px;">
+              Le : {{ showDetail.created_at | date:'dd/MM/yyyy à HH:mm' }}
+            </div>
+            <p style="font-size:14px; line-height:1.6;">{{ showDetail.message }}</p>
+          </div>
+
+          <!-- Réponse existante -->
+          <div *ngIf="showDetail.reponse"
+            style="background:#E6F1FB; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+            <div style="font-size:12px; color:#0C447C; margin-bottom:6px; font-weight:500;">
+              ✅ Réponse envoyée
+            </div>
+            <p style="font-size:13px;">{{ showDetail.reponse }}</p>
+          </div>
+
+          <!-- Zone de réponse -->
+          <div class="field" *ngIf="auth.hasRole(['admin', 'gerant'])">
+            <label>{{ showDetail.reponse ? 'Modifier la réponse' : 'Répondre' }}</label>
+            <textarea [(ngModel)]="reponse" rows="3"
+              placeholder="Écrivez votre réponse..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button class="btn btn-outline" (click)="showDetail = null">Fermer</button>
+            <button class="btn btn-primary" (click)="repondreMessage()"
+              *ngIf="auth.hasRole(['admin', 'gerant']) && reponse">
+              📨 Envoyer la réponse
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
