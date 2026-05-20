@@ -5,6 +5,8 @@ import { SidebarComponent } from '../../shared/layout/sidebar/sidebar.component'
 import { TopbarComponent } from '../../shared/layout/topbar/topbar.component';
 import { ProduitService } from '../../services/produit.service';
 import { AuthService } from '../../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment.development';
 
 @Component({
   selector: 'app-stocks',
@@ -22,9 +24,12 @@ export class StocksComponent implements OnInit {
   errorMsg        = '';
   successMsg      = '';
   editingId: number | null = null;
+  selectedFile: File | null = null;
+  previewUrl: string | null = null;
 
   form: any = {
     reference: '', nom: '', categorie_id: '',
+    origine: '',
     prix_achat: 0, prix_vente: 0, prix_revient: 0,
     quantite: 0, seuil_alerte: 5, unite: 'pièce',
     statut: 'actif', notes: ''
@@ -32,7 +37,8 @@ export class StocksComponent implements OnInit {
 
   constructor(
     private produitService: ProduitService,
-    public auth: AuthService
+    public auth: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -60,16 +66,21 @@ export class StocksComponent implements OnInit {
   }
 
   openForm(produit?: any): void {
-    this.showForm   = true;
-    this.errorMsg   = '';
-    this.successMsg = '';
+    this.showForm    = true;
+    this.errorMsg    = '';
+    this.successMsg  = '';
+    this.selectedFile = null;
+    this.previewUrl  = null;
+
     if (produit) {
       this.editingId = produit.id;
       this.form = { ...produit };
+      this.previewUrl = produit.photo_url || null;
     } else {
       this.editingId = null;
       this.form = {
         reference: '', nom: '', categorie_id: '',
+        origine: '',
         prix_achat: 0, prix_vente: 0, prix_revient: 0,
         quantite: 0, seuil_alerte: 5, unite: 'pièce',
         statut: 'actif', notes: ''
@@ -77,11 +88,42 @@ export class StocksComponent implements OnInit {
     }
   }
 
-  closeForm(): void { this.showForm = false; }
+  closeForm(): void {
+    this.showForm     = false;
+    this.selectedFile = null;
+    this.previewUrl   = null;
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e: any) => { this.previewUrl = e.target.result; };
+      reader.readAsDataURL(file);
+    }
+  }
 
   save(): void {
+    const formData = new FormData();
+
+    // Ajouter tous les champs du formulaire
+    Object.keys(this.form).forEach(key => {
+      if (this.form[key] !== null && this.form[key] !== undefined) {
+        formData.append(key, this.form[key]);
+      }
+    });
+
+    // Ajouter la photo si sélectionnée
+    if (this.selectedFile) {
+      formData.append('photo', this.selectedFile);
+    }
+
+    const url = `${environment.apiUrl}/api/produits`;
+
     if (this.editingId) {
-      this.produitService.update(this.editingId, this.form).subscribe({
+      formData.append('_method', 'PUT');
+      this.http.post(`${url}/${this.editingId}`, formData).subscribe({
         next: () => {
           this.successMsg = 'Produit modifié !';
           this.showForm = false;
@@ -91,7 +133,7 @@ export class StocksComponent implements OnInit {
         error: (err: any) => { this.errorMsg = err.error?.message || 'Erreur.'; }
       });
     } else {
-      this.produitService.create(this.form).subscribe({
+      this.http.post(url, formData).subscribe({
         next: () => {
           this.successMsg = 'Produit ajouté !';
           this.showForm = false;
@@ -118,19 +160,15 @@ export class StocksComponent implements OnInit {
           'Référence':         p.reference,
           'Nom':               p.nom,
           'Catégorie':         p.categorie?.nom || '',
+          'Origine':           p.origine || '',
           'Prix achat (F)':    p.prix_achat,
           'Prix vente (F)':    p.prix_vente,
           'Prix revient (F)':  p.prix_revient,
           'Quantité':          p.quantite,
           'Seuil alerte':      p.seuil_alerte,
-          'Unité':             p.unite,
           'Statut stock':      p.quantite === 0 ? 'Rupture' : p.quantite <= p.seuil_alerte ? 'Stock faible' : 'En stock',
-          'Bénéfice unitaire': Number(p.prix_vente) - Number(p.prix_revient),
-          'Valeur stock':      Number(p.prix_revient) * p.quantite,
-          'Notes':             p.notes || '',
         }));
 
-        // Générer CSV compatible Excel
         const headers  = Object.keys(data[0]);
         const csvRows  = [
           headers.join(';'),
@@ -139,23 +177,12 @@ export class StocksComponent implements OnInit {
           )
         ];
 
-        // Ajouter résumé
-        csvRows.push('');
-        csvRows.push('RÉSUMÉ');
-        csvRows.push(`"Total produits";"${this.stats.total || 0}"`);
-        csvRows.push(`"En stock";"${this.stats.en_stock || 0}"`);
-        csvRows.push(`"Stock faible";"${this.stats.stock_faible || 0}"`);
-        csvRows.push(`"Rupture";"${this.stats.rupture || 0}"`);
-        csvRows.push(`"Date export";"${new Date().toLocaleDateString('fr-FR')}"`);
-
         const csvContent = '\uFEFF' + csvRows.join('\n');
         const blob       = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url        = URL.createObjectURL(blob);
         const link       = document.createElement('a');
-        const date       = new Date().toISOString().split('T')[0];
-
-        link.href     = url;
-        link.download = `stocks-cash-deal-${date}.csv`;
+        link.href        = url;
+        link.download    = `stocks-cash-deal-${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         URL.revokeObjectURL(url);
       },

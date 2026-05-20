@@ -59,9 +59,11 @@
           <table>
             <thead>
               <tr>
+                <th>Photo</th>
                 <th>Référence</th>
                 <th>Produit</th>
                 <th>Catégorie</th>
+                <th>Origine</th>
                 <th>Prix achat</th>
                 <th>Prix vente</th>
                 <th>Quantité</th>
@@ -71,9 +73,19 @@
             </thead>
             <tbody>
               <tr *ngFor="let p of produits">
+                <td>
+                  <img *ngIf="p.photo_url" [src]="p.photo_url"
+                    style="width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb;"
+                    alt="photo" />
+                  <div *ngIf="!p.photo_url"
+                    style="width:40px; height:40px; background:#f3f4f6; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                    📦
+                  </div>
+                </td>
                 <td style="color:#6b7280; font-size:12px;">{{ p.reference }}</td>
                 <td style="font-weight:500;">{{ p.nom }}</td>
                 <td>{{ p.categorie?.nom }}</td>
+                <td>{{ p.origine || '—' }}</td>
                 <td>{{ p.prix_achat | number:'1.0-0' }} F</td>
                 <td>{{ p.prix_vente | number:'1.0-0' }} F</td>
                 <td>
@@ -107,7 +119,7 @@
                 </td>
               </tr>
               <tr *ngIf="produits.length === 0">
-                <td colspan="8" style="text-align:center; color:#6b7280; padding:2rem;">
+                <td colspan="10" style="text-align:center; color:#6b7280; padding:2rem;">
                   Aucun produit trouvé
                 </td>
               </tr>
@@ -116,11 +128,12 @@
         </div>
       </div>
 
+      <!-- Modal formulaire -->
       <div *ngIf="showForm"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
                display:flex; align-items:center; justify-content:center; z-index:1000;">
         <div style="background:#fff; border-radius:12px; padding:2rem;
-                    width:100%; max-width:550px; max-height:90vh; overflow-y:auto;">
+                    width:100%; max-width:560px; max-height:90vh; overflow-y:auto;">
           <h3 style="font-size:16px; font-weight:600; margin-bottom:1.5rem;">
             {{ editingId ? 'Modifier le produit' : 'Nouveau produit' }}
           </h3>
@@ -144,6 +157,40 @@
           <div class="field">
             <label>Nom du produit</label>
             <input type="text" [(ngModel)]="form.nom" placeholder="Bague OR 18K — 5g" />
+          </div>
+
+          <div class="field">
+            <label>Origine</label>
+            <input type="text" [(ngModel)]="form.origine"
+              placeholder="Ex: France, Chine, Local..." />
+          </div>
+
+          <!-- Upload photo -->
+          <div class="field">
+            <label>Photo du produit</label>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div *ngIf="previewUrl"
+                style="width:70px; height:70px; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb; flex-shrink:0;">
+                <img [src]="previewUrl"
+                  style="width:100%; height:100%; object-fit:cover;" alt="preview" />
+              </div>
+              <div *ngIf="!previewUrl"
+                style="width:70px; height:70px; border-radius:8px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">
+                📦
+              </div>
+              <div>
+                <input type="file" accept="image/*" (change)="onFileSelected($event)"
+                  style="display:none;" #fileInput />
+                <button type="button" class="btn btn-outline"
+                  style="font-size:13px;"
+                  (click)="fileInput.click()">
+                  📷 Choisir une photo
+                </button>
+                <div style="font-size:11px; color:#6b7280; margin-top:4px;">
+                  JPG, PNG, WebP — max 2 Mo
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="grid-3">
