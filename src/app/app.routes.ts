@@ -11,6 +11,7 @@ import { UtilisateursComponent } from './pages/utilisateurs/utilisateurs.compone
 import { AuthGuard } from './guards/auth.guard';
 import { DepotsComponent } from './pages/depots/depots.component';
 import { ContactComponent } from './pages/contact/contact.component';
+import { ProfilComponent } from './pages/profil/profil.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -25,5 +26,6 @@ export const routes: Routes = [
   { path: 'utilisateurs', component: UtilisateursComponent, canActivate: [AuthGuard], data: { roles: ['admin'] } },
   { path: 'depots', component: DepotsComponent, canActivate: [AuthGuard] },
   { path: 'contact', component: ContactComponent, canActivate: [AuthGuard] },
+  { path: 'profil', component: ProfilComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '/login' },
 ];

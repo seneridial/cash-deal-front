@@ -1,0 +1,68 @@
+<div class="app-layout">
+  <app-sidebar></app-sidebar>
+  <div class="app-content">
+    <app-topbar title="Mon profil"></app-topbar>
+
+    <div class="page-content">
+
+      <!-- Infos utilisateur -->
+      <div class="card" style="max-width:500px;">
+        <div class="card-title">👤 Informations du compte</div>
+
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:1.5rem;">
+          <div style="width:60px; height:60px; border-radius:50%; background:#E6F1FB;
+                      color:#0C447C; display:flex; align-items:center; justify-content:center;
+                      font-size:20px; font-weight:700;">
+            {{ currentUser?.name?.charAt(0) }}
+          </div>
+          <div>
+            <div style="font-size:16px; font-weight:600;">{{ currentUser?.name }}</div>
+            <div style="font-size:13px; color:#6b7280;">{{ currentUser?.email }}</div>
+            <span class="badge"
+              [class.badge-red]="currentUser?.role === 'admin'"
+              [class.badge-blue]="currentUser?.role === 'gerant'"
+              [class.badge-green]="currentUser?.role === 'vendeur'"
+              style="margin-top:4px; display:inline-block;">
+              {{ currentUser?.role }}
+            </span>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #e5e7eb; padding-top:1rem; font-size:13px; color:#6b7280;">
+          ℹ️ Pour modifier votre email, contactez un administrateur.
+        </div>
+      </div>
+
+      <!-- Changer mot de passe -->
+      <div class="card" style="max-width:500px; margin-top:1rem;">
+        <div class="card-title">🔐 Changer le mot de passe</div>
+
+        <div class="alert alert-success" *ngIf="successMsg">✅ {{ successMsg }}</div>
+        <div class="alert alert-error"   *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+
+        <div class="field">
+          <label>Mot de passe actuel *</label>
+          <input type="password" [(ngModel)]="form.current_password"
+            placeholder="Votre mot de passe actuel" />
+        </div>
+
+        <div class="field">
+          <label>Nouveau mot de passe *</label>
+          <input type="password" [(ngModel)]="form.new_password"
+            placeholder="Minimum 8 caractères" />
+        </div>
+
+        <div class="field">
+          <label>Confirmer le nouveau mot de passe *</label>
+          <input type="password" [(ngModel)]="form.new_password_confirmation"
+            placeholder="Répétez le nouveau mot de passe" />
+        </div>
+
+        <button class="btn btn-primary" (click)="save()" [disabled]="loading">
+          {{ loading ? 'Enregistrement...' : '💾 Sauvegarder' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
