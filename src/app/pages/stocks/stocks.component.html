@@ -155,34 +155,6 @@
               placeholder="Ex: France, Chine, Local..." />
           </div>
 
-          <!-- Upload photo -->
-          <div class="field">
-            <label>Photo du produit</label>
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div *ngIf="previewUrl"
-                style="width:70px; height:70px; border-radius:8px; overflow:hidden; border:1px solid #e5e7eb; flex-shrink:0;">
-                <img [src]="previewUrl"
-                  style="width:100%; height:100%; object-fit:cover;" alt="preview" />
-              </div>
-              <div *ngIf="!previewUrl"
-                style="width:70px; height:70px; border-radius:8px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0;">
-                📦
-              </div>
-              <div>
-                <input type="file" accept="image/*" (change)="onFileSelected($event)"
-                  style="display:none;" #fileInput />
-                <button type="button" class="btn btn-outline"
-                  style="font-size:13px;"
-                  (click)="fileInput.click()">
-                  📷 Choisir une photo
-                </button>
-                <div style="font-size:11px; color:#6b7280; margin-top:4px;">
-                  JPG, PNG, WebP — max 2 Mo
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="grid-3">
             <div class="field">
               <label>Prix achat (F)</label>

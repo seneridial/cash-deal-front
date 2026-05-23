@@ -146,12 +146,18 @@ export class StocksComponent implements OnInit {
   }
 
   delete(id: number): void {
-    if (!confirm('Supprimer ce produit ?')) return;
-    this.produitService.delete(id).subscribe({
-      next: () => { this.loadProduits(); this.loadStats(); },
-      error: (err: any) => { alert(err.error?.message || 'Erreur suppression.'); }
-    });
-  }
+  if (!confirm('Supprimer ce produit ?')) return;
+  this.produitService.delete(id).subscribe({
+    next: () => {
+      this.successMsg = 'Produit supprimé !';
+      this.loadProduits();
+      this.loadStats();
+    },
+    error: (err: any) => {
+      this.errorMsg = err.error?.message || 'Erreur lors de la suppression.';
+    }
+  });
+}
 
   exportExcel(): void {
     this.produitService.getAll({ per_page: 1000 }).subscribe({
