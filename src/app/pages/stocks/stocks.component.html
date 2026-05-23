@@ -103,7 +103,7 @@
                   <button class="btn btn-danger"
                     style="padding:4px 8px; font-size:12px;"
                     (click)="delete(p.id)"
-                    *ngIf="auth.hasRole(['admin'])">
+                    *ngIf="auth.hasRole(['admin','gerant'])">
                     🗑️
                   </button>
                 </td>
@@ -118,7 +118,6 @@
         </div>
       </div>
 
-      <!-- Modal formulaire -->
       <div *ngIf="showForm"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.5);
                display:flex; align-items:center; justify-content:center; z-index:1000;">
